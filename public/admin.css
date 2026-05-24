@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Affiliate Links | Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+
+  <aside class="admin-sidebar" id="sidebar">
+    <div class="sidebar-logo"><span class="sidebar-logo-icon">₿</span><span>CryptoSignals</span></div>
+    <nav class="sidebar-nav">
+      <a href="/admin/dashboard.html" class="nav-item"><span class="nav-item-icon">📊</span> Dashboard</a>
+      <a href="/admin/news.html" class="nav-item"><span class="nav-item-icon">📰</span> News Articles</a>
+      <a href="/admin/affiliates.html" class="nav-item active"><span class="nav-item-icon">🔗</span> Affiliate Links</a>
+      <a href="/admin/ads.html" class="nav-item"><span class="nav-item-icon">📢</span> Ad Codes</a>
+      <a href="/" target="_blank" class="nav-item"><span class="nav-item-icon">🌐</span> View Site</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-item" style="width:100%" onclick="logout()"><span class="nav-item-icon">🚪</span> Logout</button>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+        <span class="topbar-title">Affiliate Links</span>
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Link</button>
+    </div>
+
+    <div class="admin-content">
+      <div class="alert alert-success" id="alert-success"></div>
+      <div class="alert alert-error" id="alert-error"></div>
+
+      <!-- STATS -->
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;" id="aff-stats">
+        <div class="stat-card"><div class="stat-label">Total Links</div><div class="stat-value" id="s-total">—</div></div>
+        <div class="stat-card"><div class="stat-label">Active Links</div><div class="stat-value" id="s-active">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Clicks</div><div class="stat-value" id="s-clicks">—</div></div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header"><h3>All Affiliate Links</h3></div>
+        <div id="aff-table"><p class="table-empty"><span class="spinner"></span></p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="aff-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Affiliate Link</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <input type="hidden" id="edit-id">
+
+    <div class="form-group">
+      <label class="form-label">Exchange Name <span class="form-required">*</span></label>
+      <input type="text" id="f-name" class="form-input" placeholder="Binance">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Affiliate URL <span class="form-required">*</span></label>
+      <input type="url" id="f-url" class="form-input" placeholder="https://binance.com/register?ref=...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Coin Tags</label>
+        <input type="text" id="f-tags" class="form-input" placeholder="BTC, ETH, BNB">
+        <div class="form-hint">Comma separated — used to match articles</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Commission Rate</label>
+        <input type="text" id="f-commission" class="form-input" placeholder="20%">
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="toggle-wrapper">
+        <label class="toggle"><input type="checkbox" id="f-active" checked><span class="toggle-slider"></span></label>
+        <span class="toggle-label">Active</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLink()">Save Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="max-width:360px;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">🗑️</div>
+    <h3 style="margin-bottom:8px;">Delete Link?</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">This cannot be undone.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-secondary" onclick="document.getElementById('delete-modal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/admin/js/auth.js"></script>
+<script>
+let links = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await requireAuth();
+  loadLinks();
+});
+
+async function loadLinks() {
+  const { data } = await db.from('affiliate_links').select('*').order('created_at', { ascending: false });
+  links = data || [];
+  renderStats();
+  renderTable();
+}
+
+function renderStats() {
+  document.getElementById('s-total').textContent = links.length;
+  document.getElementById('s-active').textContent = links.filter(l => l.is_active).length;
+  document.getElementById('s-clicks').textContent = links.reduce((s, l) => s + (l.clicks || 0), 0).toLocaleString();
+}
+
+function renderTable() {
+  const container = document.getElementById('aff-table');
+  if (!links.length) { container.innerHTML = '<p class="table-empty">No affiliate links yet. Add your first one!</p>'; return; }
+
+  container.innerHTML = `
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Name</th><th>URL</th><th>Tags</th><th>Commission</th><th>Clicks</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${links.map(l => `
+        <tr>
+          <td><strong>${escapeHtml(l.name)}</strong></td>
+          <td><a href="${l.url}" target="_blank" style="color:var(--accent);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${l.url}</a></td>
+          <td>${(l.coin_tags||[]).map(t=>`<span class="badge badge-yellow">${t}</span>`).join(' ')}</td>
+          <td><span style="color:var(--accent-green);font-weight:600">${l.commission_rate||'—'}</span></td>
+          <td><strong>${l.clicks||0}</strong></td>
+          <td>
+            <label class="toggle">
+              <input type="checkbox" ${l.is_active?'checked':''} onchange="toggleActive('${l.id}',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="editLink('${l.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="openDelete('${l.id}')">🗑️</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+}
+
+async function toggleActive(id, active) {
+  await db.from('affiliate_links').update({ is_active: active }).eq('id', id);
+  const l = links.find(x => x.id === id);
+  if (l) l.is_active = active;
+  renderStats();
+}
+
+function openModal() {
+  document.getElementById('modal-title').textContent = 'Add Affiliate Link';
+  document.getElementById('edit-id').value = '';
+  ['f-name','f-url','f-tags','f-commission'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-active').checked = true;
+  document.getElementById('aff-modal').classList.add('open');
+}
+
+function editLink(id) {
+  const l = links.find(x => x.id === id);
+  if (!l) return;
+  document.getElementById('modal-title').textContent = 'Edit Affiliate Link';
+  document.getElementById('edit-id').value = id;
+  document.getElementById('f-name').value = l.name || '';
+  document.getElementById('f-url').value = l.url || '';
+  document.getElementById('f-tags').value = (l.coin_tags||[]).join(', ');
+  document.getElementById('f-commission').value = l.commission_rate || '';
+  document.getElementById('f-active').checked = l.is_active;
+  document.getElementById('aff-modal').classList.add('open');
+}
+
+async function saveLink() {
+  const name = document.getElementById('f-name').value.trim();
+  const url = document.getElementById('f-url').value.trim();
+  if (!name || !url) return showAlert('error', 'Name and URL are required');
+
+  const payload = {
+    name, url,
+    coin_tags: document.getElementById('f-tags').value.split(',').map(t=>t.trim().toUpperCase()).filter(Boolean),
+    commission_rate: document.getElementById('f-commission').value.trim(),
+    is_active: document.getElementById('f-active').checked,
+  };
+
+  const editId = document.getElementById('edit-id').value;
+  const { error } = editId
+    ? await db.from('affiliate_links').update(payload).eq('id', editId)
+    : await db.from('affiliate_links').insert(payload);
+
+  if (error) return showAlert('error', 'Save failed: ' + error.message);
+  closeModal();
+  showAlert('success', '✅ Saved!');
+  loadLinks();
+}
+
+function openDelete(id) {
+  document.getElementById('delete-modal').classList.add('open');
+  document.getElementById('confirm-delete').onclick = async () => {
+    await db.from('affiliate_links').delete().eq('id', id);
+    document.getElementById('delete-modal').classList.remove('open');
+    showAlert('success', '✅ Deleted');
+    loadLinks();
+  };
+}
+
+function closeModal() { document.getElementById('aff-modal').classList.remove('open'); }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+function showAlert(type, msg) {
+  const el = document.getElementById(`alert-${type}`);
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+function escapeHtml(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
