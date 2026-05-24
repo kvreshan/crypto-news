@@ -53,7 +53,8 @@ function renderArticle(article) {
   const date = new Date(article.published_at).toLocaleDateString('en-US', {
     year: 'numeric', month: 'long', day: 'numeric'
   });
-  const img = article.image_url || 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=800&q=80';
+  const FALLBACK_IMG = 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=800&q=80';
+  const img = (article.image_url && article.image_url.trim() !== '') ? article.image_url : FALLBACK_IMG;
 
   container.innerHTML = `
     <div class="article-header">
@@ -67,7 +68,7 @@ function renderArticle(article) {
     </div>
 
     <img src="${img}" alt="${escapeHtml(article.title)}" class="article-image"
-         onerror="this.src='https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=800&q=80'">
+         onerror="handleImgError(this, '${FALLBACK_IMG}')">
     ${article.image_credit ? `<p style="font-size:11px;color:var(--text-muted);margin:-16px 0 24px;text-align:right;">Photo: ${escapeHtml(article.image_credit)}</p>` : ''}
 
     <div id="ad-article-middle"></div>
@@ -211,4 +212,16 @@ function formatContent(text) {
 function escapeHtml(text) {
   if (!text) return '';
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function handleImgError(imgEl, fallback) {
+  const failedSrc = imgEl.src;
+  console.warn('[Article] Image failed to load:', failedSrc);
+  // Only fallback if not already using fallback (prevent infinite loop)
+  if (imgEl.src !== fallback && !imgEl.src.includes('unsplash.com')) {
+    imgEl.src = fallback;
+  } else {
+    // Fallback also failed — hide image gracefully
+    imgEl.style.display = 'none';
+  }
 }
