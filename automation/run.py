@@ -364,7 +364,7 @@ def main():
         print("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
         return
 
-    if not ANTHROPIC_API_KEY and not GEMINI_API_KEY:
+    if not GEMINI_API_KEY:
         print("❌ Need at least one AI API key (ANTHROPIC or GEMINI)")
         return
 
