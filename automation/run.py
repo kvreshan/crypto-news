@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import re
 import json
 import time
 import requests
@@ -57,38 +58,66 @@ def get_coin_price_data(coin_id):
     return {}
 
 def build_prompt(coin, price, change_str):
-    return f"""You are a professional crypto news writer. Write a detailed, SEO-optimized crypto news article.
+    return f"""You are a professional crypto news writer. Write a crypto news article about {coin['name']} ({coin['symbol']}).
 
-Coin: {coin['name']} ({coin['symbol']})
 Current Price: ${price}
 24h Change: {change_str}
 
-Return your response as a JSON object with exactly these fields:
-{{
-  "title": "Engaging SEO title (60-70 chars)",
-  "summary": "2-3 sentence summary for previews",
-  "content": "Full article content (400-600 words). Use ## for headings, paragraphs separated by blank lines. Include price analysis, market sentiment, key factors.",
-  "coin_tags": ["{coin['symbol']}", "CRYPTO"],
-  "market_analysis": {{
-    "short_term": "Bullish/Bearish/Neutral",
-    "long_term": "Bullish/Bearish/Neutral",
-    "support": "$XX,XXX (realistic support level)",
-    "resistance": "$XX,XXX (realistic resistance level)",
-    "sentiment_score": 65,
-    "key_insight": "One key insight in 1-2 sentences"
-  }}
-}}
-
-Return ONLY valid JSON, no markdown, no extra text."""
+Respond with ONLY a JSON object. No markdown, no code blocks, no extra text. Use this exact structure:
+{{"title":"SEO title here","summary":"2-3 sentence summary here","content":"Full article 400-500 words. Use double space between paragraphs. No special characters.","coin_tags":["{coin['symbol']}","CRYPTO"],"market_analysis":{{"short_term":"Bullish","long_term":"Bullish","support":"$X,XXX","resistance":"$X,XXX","sentiment_score":65,"key_insight":"Key insight here"}}}}"""
 
 def parse_ai_response(text):
     text = text.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    text = text.strip()
-    return json.loads(text)
+
+    # Remove markdown code blocks
+    if "```" in text:
+        text = re.sub(r'```(?:json)?', '', text)
+        text = text.strip()
+
+    # Find JSON boundaries
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start != -1 and end > start:
+        text = text[start:end]
+
+    # Remove control characters except \n \r \t
+    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text)
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Fix unescaped newlines inside strings
+        def fix_string_newlines(s):
+            result = []
+            in_string = False
+            escape = False
+            for ch in s:
+                if escape:
+                    result.append(ch)
+                    escape = False
+                elif ch == '\\':
+                    result.append(ch)
+                    escape = True
+                elif ch == '"':
+                    result.append(ch)
+                    in_string = not in_string
+                elif in_string and ch == '\n':
+                    result.append('\\n')
+                elif in_string and ch == '\r':
+                    result.append('\\r')
+                elif in_string and ch == '\t':
+                    result.append('\\t')
+                else:
+                    result.append(ch)
+            return ''.join(result)
+
+        text = fix_string_newlines(text)
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # Last resort: strip all newlines inside strings
+            text = re.sub(r'[\n\r\t]', ' ', text)
+            return json.loads(text)
 
 def generate_with_groq(coin, price_data):
     if not GROQ_API_KEY:
@@ -110,6 +139,7 @@ def generate_with_groq(coin, price_data):
                     "model": "llama-3.1-8b-instant",
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 1500,
+                    "temperature": 0.7,
                 },
                 timeout=30,
             )
