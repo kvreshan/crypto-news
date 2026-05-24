@@ -1,11 +1,9 @@
 {
   "version": 2,
+  "outputDirectory": "public",
   "rewrites": [
-    { "source": "/admin", "destination": "/admin/login.html" },
-    { "source": "/admin/(.*)", "destination": "/admin/$1" },
-    { "source": "/article/(.*)", "destination": "/public/article/$1" },
-    { "source": "/signals", "destination": "/public/signals.html" },
-    { "source": "/", "destination": "/public/index.html" },
-    { "source": "/(.*)", "destination": "/public/$1" }
+    { "source": "/admin/(.*)", "destination": "/../admin/$1" },
+    { "source": "/admin", "destination": "/../admin/login.html" },
+    { "source": "/(.*)", "destination": "/$1" }
   ]
 }
