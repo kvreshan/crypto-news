@@ -2,14 +2,12 @@
 import os
 import json
 import time
-import hashlib
 import requests
 from datetime import datetime, timedelta, timezone
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
 ARTICLES_PER_RUN = int(os.environ.get("ARTICLES_PER_RUN", "3"))
@@ -92,74 +90,50 @@ def parse_ai_response(text):
     text = text.strip()
     return json.loads(text)
 
-def generate_with_claude(coin, price_data):
-    if not ANTHROPIC_API_KEY:
-        raise Exception("No Anthropic API key")
+def generate_with_groq(coin, price_data):
+    if not GROQ_API_KEY:
+        raise Exception("No Groq API key")
     price = price_data.get("usd", "N/A")
     change = price_data.get("usd_24h_change", 0)
     change_str = f"+{change:.2f}%" if change >= 0 else f"{change:.2f}%"
     prompt = build_prompt(coin, price, change_str)
-    print(f"🤖 Generating with Claude for {coin['symbol']}...")
-    res = requests.post(
-        "https://api.anthropic.com/v1/messages",
-        headers={
-            "x-api-key": ANTHROPIC_API_KEY,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
-        json={
-            "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 1500,
-            "messages": [{"role": "user", "content": prompt}],
-        },
-        timeout=30,
-    )
-    if res.status_code == 429:
-        raise Exception("Claude rate limit")
-    res.raise_for_status()
-    content = res.json()["content"][0]["text"]
-    return parse_ai_response(content), "claude"
-
-def generate_with_gemini(coin, price_data):
-    if not GEMINI_API_KEY:
-        raise Exception("No Gemini API key")
-    price = price_data.get("usd", "N/A")
-    change = price_data.get("usd_24h_change", 0)
-    change_str = f"+{change:.2f}%" if change >= 0 else f"{change:.2f}%"
-    prompt = build_prompt(coin, price, change_str)
-    print(f"🤖 Generating with Gemini for {coin['symbol']}...")
+    print(f"🤖 Generating with Groq for {coin['symbol']}...")
     for attempt in range(3):
         try:
             res = requests.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}",
-                json={"contents": [{"parts": [{"text": prompt}]}]},
-                timeout=60,
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1500,
+                },
+                timeout=30,
             )
             if res.status_code == 429:
-                wait = 20 * (attempt + 1)
+                wait = 15 * (attempt + 1)
                 print(f"⏳ Rate limit, waiting {wait}s (attempt {attempt+1}/3)...")
                 time.sleep(wait)
                 continue
             res.raise_for_status()
-            content = res.json()["candidates"][0]["content"]["parts"][0]["text"]
-            return parse_ai_response(content), "gemini"
+            content = res.json()["choices"][0]["message"]["content"]
+            return parse_ai_response(content), "groq"
         except Exception as e:
             if attempt == 2:
                 raise e
             print(f"⏳ Retry {attempt+1}/3 after error: {e}")
-            time.sleep(15)
-    raise Exception("Gemini failed after 3 attempts")
+            time.sleep(10)
+    raise Exception("Groq failed after 3 attempts")
 
 def generate_article(coin, price_data):
     try:
-        return generate_with_claude(coin, price_data)
+        return generate_with_groq(coin, price_data)
     except Exception as e:
-        print(f"⚠️ Claude failed: {e}")
-        try:
-            return generate_with_gemini(coin, price_data)
-        except Exception as e2:
-            print(f"❌ Gemini also failed: {e2}")
-            raise Exception(f"Both AI providers failed: {e} | {e2}")
+        print(f"❌ Groq failed: {e}")
+        raise Exception(f"Article generation failed: {e}")
 
 def get_image_unsplash(query):
     if not UNSPLASH_ACCESS_KEY:
@@ -256,8 +230,8 @@ def main():
         print("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
         return
 
-    if not GEMINI_API_KEY and not ANTHROPIC_API_KEY:
-        print("❌ Need at least one AI API key")
+    if not GROQ_API_KEY:
+        print("❌ Missing GROQ_API_KEY")
         return
 
     coins = get_trending_coins()
@@ -281,8 +255,8 @@ def main():
             fail_count += 1
 
         if i < len(coins) - 1:
-            print("⏳ Waiting 30 seconds...")
-            time.sleep(30)
+            print("⏳ Waiting 10 seconds...")
+            time.sleep(10)
 
     print("\n" + "=" * 50)
     cleanup_old_data()
