@@ -64,7 +64,7 @@ Current Price: ${price}
 24h Change: {change_str}
 
 Respond with ONLY a JSON object. No markdown, no code blocks, no extra text. Use this exact structure:
-{{"title":"SEO title here","summary":"2-3 sentence summary here","content":"Full article 400-500 words. Use double space between paragraphs. No special characters.","coin_tags":["{coin['symbol']}","CRYPTO"],"market_analysis":{{"short_term":"Bullish","long_term":"Bullish","support":"$X,XXX","resistance":"$X,XXX","sentiment_score":65,"key_insight":"Key insight here"}}}}"""
+{{"title":"SEO title here","summary":"2-3 sentence summary here","content":"Full article 250-300 words. Use double space between paragraphs. No special characters.","coin_tags":["{coin['symbol']}","CRYPTO"],"market_analysis":{{"short_term":"Bullish","long_term":"Bullish","support":"$X,XXX","resistance":"$X,XXX","sentiment_score":65,"key_insight":"Key insight here"}}}}"""
 
 def parse_ai_response(text):
     text = text.strip()
@@ -138,7 +138,7 @@ def generate_with_groq(coin, price_data):
                 json={
                     "model": "llama-3.1-8b-instant",
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1500,
+                    "max_tokens": 2048,
                     "temperature": 0.7,
                 },
                 timeout=30,
