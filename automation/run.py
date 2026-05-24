@@ -402,7 +402,7 @@ def main():
         # Rate limiting - wait between articles
         if i < len(coins) - 1:
             print("⏳ Waiting 3 seconds...")
-            time.sleep(3)
+            time.sleep(30)
 
     # Cleanup old data
     print("\n" + "=" * 50)
