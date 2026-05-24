@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Articles | Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="sidebar-logo-icon">₿</span><span>CryptoSignals</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/admin/dashboard.html" class="nav-item"><span class="nav-item-icon">📊</span> Dashboard</a>
+      <a href="/admin/news.html" class="nav-item active"><span class="nav-item-icon">📰</span> News Articles</a>
+      <a href="/admin/affiliates.html" class="nav-item"><span class="nav-item-icon">🔗</span> Affiliate Links</a>
+      <a href="/admin/ads.html" class="nav-item"><span class="nav-item-icon">📢</span> Ad Codes</a>
+      <a href="/" target="_blank" class="nav-item"><span class="nav-item-icon">🌐</span> View Site</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-item" style="width:100%" onclick="logout()"><span class="nav-item-icon">🚪</span> Logout</button>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+        <span class="topbar-title">News Articles</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Article</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <div class="alert alert-success" id="alert-success"></div>
+      <div class="alert alert-error" id="alert-error"></div>
+
+      <!-- FILTER BAR -->
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="search-input" class="form-input" style="max-width:260px;" placeholder="Search articles...">
+        <select id="filter-status" class="form-select" style="width:140px;">
+          <option value="all">All Status</option>
+          <option value="true">Published</option>
+          <option value="false">Draft</option>
+        </select>
+        <select id="filter-coin" class="form-select" style="width:140px;">
+          <option value="all">All Coins</option>
+          <option value="BTC">Bitcoin</option>
+          <option value="ETH">Ethereum</option>
+          <option value="BNB">BNB</option>
+          <option value="SOL">Solana</option>
+          <option value="ALT">Altcoins</option>
+        </select>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3>All Articles</h3>
+          <span id="article-count" style="font-size:12px;color:var(--text-muted)"></span>
+        </div>
+        <div id="articles-table"><p class="table-empty"><span class="spinner"></span></p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="article-modal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Article</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <input type="hidden" id="edit-id">
+
+    <div class="form-group">
+      <label class="form-label">Title <span class="form-required">*</span></label>
+      <input type="text" id="f-title" class="form-input" placeholder="Article title">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Summary</label>
+      <textarea id="f-summary" class="form-textarea" rows="2" placeholder="Short summary..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Content <span class="form-required">*</span></label>
+      <textarea id="f-content" class="form-textarea" rows="8" placeholder="Full article content... (Markdown supported)"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Coin Tags</label>
+        <input type="text" id="f-tags" class="form-input" placeholder="BTC, ETH, SOL">
+        <div class="form-hint">Comma separated</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Image URL</label>
+        <input type="url" id="f-image" class="form-input" placeholder="https://...">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Market Analysis (optional)</label>
+      <div class="form-row">
+        <div>
+          <label class="form-label" style="font-size:11px">Short Term</label>
+          <select id="f-short-term" class="form-select">
+            <option value="">Select</option>
+            <option value="Bullish">Bullish</option>
+            <option value="Bearish">Bearish</option>
+            <option value="Neutral">Neutral</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px">Long Term</label>
+          <select id="f-long-term" class="form-select">
+            <option value="">Select</option>
+            <option value="Bullish">Bullish</option>
+            <option value="Bearish">Bearish</option>
+            <option value="Neutral">Neutral</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px">Support Level</label>
+          <input type="text" id="f-support" class="form-input" placeholder="$60,000">
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px">Resistance Level</label>
+          <input type="text" id="f-resistance" class="form-input" placeholder="$72,000">
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label class="form-label" style="font-size:11px">Sentiment Score (0-100 bullish)</label>
+        <input type="range" id="f-sentiment" min="0" max="100" value="50" oninput="document.getElementById('sentiment-val').textContent=this.value+'%'">
+        <span id="sentiment-val" style="font-size:12px;color:var(--text-muted)">50%</span>
+      </div>
+      <div style="margin-top:10px">
+        <label class="form-label" style="font-size:11px">Key Insight</label>
+        <input type="text" id="f-insight" class="form-input" placeholder="Key market insight...">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="toggle-wrapper">
+        <label class="toggle">
+          <input type="checkbox" id="f-published" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Published</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveArticle()">Save Article</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="max-width:360px;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">🗑️</div>
+    <h3 style="margin-bottom:8px;">Delete Article?</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">This cannot be undone.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/admin/js/auth.js"></script>
+<script>
+let allArticles = [];
+let deleteTargetId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await requireAuth();
+  loadArticles();
+
+  document.getElementById('search-input').addEventListener('input', renderTable);
+  document.getElementById('filter-status').addEventListener('change', renderTable);
+  document.getElementById('filter-coin').addEventListener('change', renderTable);
+});
+
+async function loadArticles() {
+  const { data, error } = await db.from('news')
+    .select('id, title, coin_tags, views, is_published, published_at, ai_provider')
+    .order('published_at', { ascending: false });
+
+  if (error) return showAlert('error', 'Failed to load articles');
+  allArticles = data || [];
+  renderTable();
+}
+
+function renderTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const status = document.getElementById('filter-status').value;
+  const coin = document.getElementById('filter-coin').value;
+
+  let filtered = allArticles.filter(a => {
+    if (search && !a.title.toLowerCase().includes(search)) return false;
+    if (status !== 'all' && String(a.is_published) !== status) return false;
+    if (coin !== 'all' && !(a.coin_tags || []).includes(coin)) return false;
+    return true;
+  });
+
+  document.getElementById('article-count').textContent = `${filtered.length} articles`;
+
+  const container = document.getElementById('articles-table');
+  if (!filtered.length) {
+    container.innerHTML = '<p class="table-empty">No articles found</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr>
+        <th>Title</th><th>Tags</th><th>Views</th><th>AI</th><th>Status</th><th>Date</th><th>Actions</th>
+      </tr></thead>
+      <tbody>${filtered.map(a => `
+        <tr>
+          <td style="max-width:280px;">
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">${escapeHtml(a.title)}</div>
+          </td>
+          <td>${(a.coin_tags||[]).map(t=>`<span class="badge badge-yellow">${t}</span>`).join(' ')}</td>
+          <td>${a.views||0}</td>
+          <td><span style="font-size:11px;color:var(--text-muted)">${a.ai_provider||'auto'}</span></td>
+          <td>
+            <label class="toggle" title="${a.is_published?'Click to unpublish':'Click to publish'}">
+              <input type="checkbox" ${a.is_published?'checked':''} onchange="togglePublish('${a.id}', this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td style="color:var(--text-muted);font-size:12px;">${new Date(a.published_at).toLocaleDateString()}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="/article/index.html?id=${a.id}" target="_blank" class="btn btn-secondary btn-sm btn-icon" title="View">👁</a>
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="editArticle('${a.id}')" title="Edit">✏️</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="openDeleteModal('${a.id}')" title="Delete">🗑️</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+}
+
+async function togglePublish(id, published) {
+  const { error } = await db.from('news').update({ is_published: published }).eq('id', id);
+  if (error) return showAlert('error', 'Update failed');
+  const article = allArticles.find(a => a.id === id);
+  if (article) article.is_published = published;
+}
+
+function openAddModal() {
+  document.getElementById('modal-title').textContent = 'Add Article';
+  document.getElementById('edit-id').value = '';
+  clearForm();
+  document.getElementById('article-modal').classList.add('open');
+}
+
+async function editArticle(id) {
+  const { data, error } = await db.from('news').select('*').eq('id', id).single();
+  if (error || !data) return showAlert('error', 'Failed to load article');
+
+  document.getElementById('modal-title').textContent = 'Edit Article';
+  document.getElementById('edit-id').value = id;
+
+  document.getElementById('f-title').value = data.title || '';
+  document.getElementById('f-summary').value = data.summary || '';
+  document.getElementById('f-content').value = data.content || '';
+  document.getElementById('f-tags').value = (data.coin_tags || []).join(', ');
+  document.getElementById('f-image').value = data.image_url || '';
+  document.getElementById('f-published').checked = data.is_published;
+
+  const ma = data.market_analysis || {};
+  document.getElementById('f-short-term').value = ma.short_term || '';
+  document.getElementById('f-long-term').value = ma.long_term || '';
+  document.getElementById('f-support').value = ma.support || '';
+  document.getElementById('f-resistance').value = ma.resistance || '';
+  document.getElementById('f-sentiment').value = ma.sentiment_score || 50;
+  document.getElementById('sentiment-val').textContent = (ma.sentiment_score || 50) + '%';
+  document.getElementById('f-insight').value = ma.key_insight || '';
+
+  document.getElementById('article-modal').classList.add('open');
+}
+
+async function saveArticle() {
+  const title = document.getElementById('f-title').value.trim();
+  const content = document.getElementById('f-content').value.trim();
+  if (!title || !content) return showAlert('error', 'Title and content are required');
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const tags = document.getElementById('f-tags').value.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
+  const shortTerm = document.getElementById('f-short-term').value;
+  const longTerm = document.getElementById('f-long-term').value;
+
+  const market_analysis = (shortTerm || longTerm) ? {
+    short_term: shortTerm,
+    long_term: longTerm,
+    support: document.getElementById('f-support').value,
+    resistance: document.getElementById('f-resistance').value,
+    sentiment_score: parseInt(document.getElementById('f-sentiment').value),
+    key_insight: document.getElementById('f-insight').value,
+  } : null;
+
+  const payload = {
+    title,
+    summary: document.getElementById('f-summary').value.trim(),
+    content,
+    coin_tags: tags,
+    image_url: document.getElementById('f-image').value.trim(),
+    is_published: document.getElementById('f-published').checked,
+    market_analysis,
+  };
+
+  const editId = document.getElementById('edit-id').value;
+  let error;
+
+  if (editId) {
+    ({ error } = await db.from('news').update(payload).eq('id', editId));
+  } else {
+    payload.published_at = new Date().toISOString();
+    ({ error } = await db.from('news').insert(payload));
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Save Article';
+
+  if (error) return showAlert('error', 'Save failed: ' + error.message);
+
+  closeModal();
+  showAlert('success', editId ? '✅ Article updated!' : '✅ Article added!');
+  loadArticles();
+}
+
+function openDeleteModal(id) {
+  deleteTargetId = id;
+  document.getElementById('delete-modal').classList.add('open');
+  document.getElementById('confirm-delete-btn').onclick = confirmDelete;
+}
+
+async function confirmDelete() {
+  if (!deleteTargetId) return;
+  const { error } = await db.from('news').delete().eq('id', deleteTargetId);
+  closeDeleteModal();
+  if (error) return showAlert('error', 'Delete failed');
+  showAlert('success', '✅ Article deleted');
+  loadArticles();
+}
+
+function closeModal() { document.getElementById('article-modal').classList.remove('open'); }
+function closeDeleteModal() { document.getElementById('delete-modal').classList.remove('open'); deleteTargetId = null; }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+function clearForm() {
+  ['f-title','f-summary','f-content','f-tags','f-image','f-support','f-resistance','f-insight'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-short-term').value = '';
+  document.getElementById('f-long-term').value = '';
+  document.getElementById('f-sentiment').value = 50;
+  document.getElementById('sentiment-val').textContent = '50%';
+  document.getElementById('f-published').checked = true;
+}
+
+function showAlert(type, msg) {
+  const el = document.getElementById(`alert-${type}`);
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function escapeHtml(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>
