@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoSignals LK - Latest Crypto News & Signals</title>
+  <meta name="description" content="Latest cryptocurrency news, trading signals and market analysis">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/favicon.ico">
+</head>
+<body>
+
+<!-- HEADER AD (injected by ad system) -->
+<div id="ad-header"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a href="/" class="logo">
+      <span class="logo-icon">₿</span>
+      <span class="logo-text">CryptoSignals<span class="logo-lk">LK</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="active">News</a>
+      <a href="/signals.html">Signals</a>
+      <a href="#" id="telegram-link" target="_blank">Telegram</a>
+    </div>
+    <button class="hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/">News</a>
+    <a href="/signals.html">Signals</a>
+    <a href="#" id="telegram-link-mobile" target="_blank">Telegram</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-ticker" id="price-ticker">
+      <div class="ticker-inner" id="ticker-inner">Loading prices...</div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<main class="container main-layout">
+
+  <!-- LEFT: NEWS FEED -->
+  <section class="news-section">
+    <div class="section-header">
+      <h2>Latest News</h2>
+      <div class="filter-pills">
+        <button class="pill active" data-filter="all">All</button>
+        <button class="pill" data-filter="BTC">Bitcoin</button>
+        <button class="pill" data-filter="ETH">Ethereum</button>
+        <button class="pill" data-filter="ALT">Altcoins</button>
+      </div>
+    </div>
+
+    <!-- Featured Article -->
+    <div id="featured-article" class="featured-card skeleton-box"></div>
+
+    <!-- Article Top Ad -->
+    <div id="ad-article-top"></div>
+
+    <!-- News Grid -->
+    <div class="news-grid" id="news-grid">
+      <!-- Skeleton loaders -->
+      <div class="news-card skeleton-box"></div>
+      <div class="news-card skeleton-box"></div>
+      <div class="news-card skeleton-box"></div>
+      <div class="news-card skeleton-box"></div>
+      <div class="news-card skeleton-box"></div>
+      <div class="news-card skeleton-box"></div>
+    </div>
+
+    <button class="load-more-btn" id="load-more">Load More</button>
+  </section>
+
+  <!-- RIGHT: SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- Signals Widget -->
+    <div class="widget">
+      <div class="widget-header">
+        <h3>Live Signals</h3>
+        <a href="/signals.html" class="widget-link">View All →</a>
+      </div>
+      <div id="signals-widget"></div>
+    </div>
+
+    <!-- Sidebar Ad -->
+    <div id="ad-sidebar"></div>
+
+    <!-- Top Coins Widget -->
+    <div class="widget">
+      <div class="widget-header">
+        <h3>Top Coins</h3>
+      </div>
+      <div id="top-coins-widget"></div>
+    </div>
+
+    <!-- Affiliate Widget -->
+    <div class="widget affiliate-widget">
+      <h3>Start Trading</h3>
+      <div id="affiliate-widget"></div>
+    </div>
+
+  </aside>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <span class="logo-icon">₿</span>
+      <span>CryptoSignals LK</span>
+    </div>
+    <p class="footer-disclaimer">
+      Content is for informational purposes only. Not financial advice. 
+      Cryptocurrency investments involve risk.
+    </p>
+    <div class="footer-links">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<!-- POPUP AD -->
+<div id="ad-popup"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabase.js"></script>
+<script src="/js/ads.js"></script>
+<script src="/js/index.js"></script>
+</body>
+</html>
