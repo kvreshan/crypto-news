@@ -104,8 +104,29 @@
         <div class="form-hint">Comma separated</div>
       </div>
       <div class="form-group">
-        <label class="form-label">Image URL</label>
-        <input type="url" id="f-image" class="form-input" placeholder="https://...">
+        <label class="form-label">Article Image</label>
+
+        <!-- Upload button -->
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <label for="f-image-file" class="btn btn-secondary btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+            <span id="upload-btn-icon">📁</span> <span id="upload-btn-text">Upload Image</span>
+          </label>
+          <input type="file" id="f-image-file" accept="image/*" style="display:none;" onchange="handleImageUpload(this)">
+          <span id="upload-status" style="font-size:12px;color:var(--text-muted);"></span>
+        </div>
+
+        <!-- URL field -->
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="url" id="f-image" class="form-input" placeholder="Or paste image URL: https://..." oninput="previewImage(this.value)">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('f-image').value='';document.getElementById('f-image-file').value='';previewImage('');document.getElementById('upload-status').textContent=''" title="Clear">✕</button>
+        </div>
+        <div class="form-hint">Upload a file or paste a URL</div>
+
+        <!-- Preview -->
+        <div id="image-preview-wrap" style="display:none;margin-top:10px;position:relative;width:100%;max-width:320px;">
+          <img id="image-preview" src="" alt="Preview" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
+          <span style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.55);color:#fff;font-size:10px;padding:2px 7px;border-radius:4px;">Preview</span>
+        </div>
       </div>
     </div>
 
@@ -286,6 +307,7 @@ async function editArticle(id) {
   document.getElementById('f-content').value = data.content || '';
   document.getElementById('f-tags').value = (data.coin_tags || []).join(', ');
   document.getElementById('f-image').value = data.image_url || '';
+  previewImage(data.image_url || '');
   document.getElementById('f-published').checked = data.is_published;
 
   const ma = data.market_analysis || {};
@@ -373,6 +395,7 @@ function toggleSidebar() { document.getElementById('sidebar').classList.toggle('
 
 function clearForm() {
   ['f-title','f-summary','f-content','f-tags','f-image','f-support','f-resistance','f-insight'].forEach(id => document.getElementById(id).value = '');
+  previewImage('');
   document.getElementById('f-short-term').value = '';
   document.getElementById('f-long-term').value = '';
   document.getElementById('f-sentiment').value = 50;
@@ -388,6 +411,62 @@ function showAlert(type, msg) {
 }
 
 function escapeHtml(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function previewImage(url) {
+  const wrap = document.getElementById('image-preview-wrap');
+  const img = document.getElementById('image-preview');
+  if (url && (url.startsWith('http') || url.startsWith('blob'))) {
+    img.src = url;
+    wrap.style.display = 'block';
+    img.onerror = () => { wrap.style.display = 'none'; };
+  } else {
+    wrap.style.display = 'none';
+    img.src = '';
+  }
+}
+
+async function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('upload-status');
+  const btnText = document.getElementById('upload-btn-text');
+  const btnIcon = document.getElementById('upload-btn-icon');
+
+  // Show local preview immediately
+  const blobUrl = URL.createObjectURL(file);
+  previewImage(blobUrl);
+
+  statusEl.textContent = 'Uploading...';
+  btnText.textContent = 'Uploading...';
+  btnIcon.textContent = '⏳';
+
+  try {
+    // Upload to Supabase Storage (bucket: "article-images")
+    const ext = file.name.split('.').pop();
+    const fileName = `article-${Date.now()}.${ext}`;
+    const { data, error } = await db.storage
+      .from('article-images')
+      .upload(fileName, file, { upsert: true, contentType: file.type });
+
+    if (error) throw error;
+
+    // Get public URL
+    const { data: urlData } = db.storage.from('article-images').getPublicUrl(fileName);
+    const publicUrl = urlData.publicUrl;
+
+    document.getElementById('f-image').value = publicUrl;
+    previewImage(publicUrl);
+    statusEl.innerHTML = '<span style="color:#22c55e">✓ Uploaded!</span>';
+    btnText.textContent = 'Change Image';
+    btnIcon.textContent = '📁';
+  } catch (err) {
+    console.error(err);
+    statusEl.innerHTML = '<span style="color:var(--danger)">Upload failed — bucket "article-images" නැද්ද? URL manually paste කරන්න.</span>';
+    btnText.textContent = 'Upload Image';
+    btnIcon.textContent = '📁';
+  }
+}
 </script>
 </body>
 </html>
