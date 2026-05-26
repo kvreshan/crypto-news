@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Crypto Signals | CryptoSignals LK</title>
+  <meta name="description" content="AI-powered crypto trading signals using Smart Money Concepts">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -19,44 +20,80 @@
     <div class="nav-links">
       <a href="/">News</a>
       <a href="/signals.html" class="active">Signals</a>
-      <a href="#" id="telegram-link" target="_blank">Telegram</a>
+      <a href="#" id="telegram-link" target="_blank">📱 Telegram</a>
     </div>
     <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
   </div>
   <div class="mobile-menu" id="mobile-menu">
     <a href="/">News</a>
     <a href="/signals.html">Signals</a>
+    <a href="#" id="telegram-link-m" target="_blank">Telegram</a>
   </div>
 </nav>
 
 <main class="container">
-  <div style="padding: 24px 0 8px;">
-    <h1 style="font-size:24px;font-weight:800;margin-bottom:8px;">Live Trading Signals</h1>
-    <p style="color:var(--text-secondary);font-size:14px;">AI-powered crypto signals. Not financial advice — always DYOR.</p>
+
+  <!-- HEADER -->
+  <div style="padding:24px 0 8px;">
+    <h1 style="font-size:26px;font-weight:800;margin-bottom:8px;">
+      📊 Live Trading Signals
+    </h1>
+    <p style="color:var(--text-secondary);font-size:14px;max-width:600px;">
+      AI-powered signals using Smart Money Concepts (SMC) — liquidity sweeps, order blocks, BOS/CHOCH detection.
+      <strong style="color:var(--accent)">Not financial advice.</strong>
+    </p>
   </div>
+
+  <!-- STATS BAR -->
+  <div id="stats-bar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 24px;"></div>
 
   <div id="ad-article-top"></div>
 
-  <div class="filter-pills" style="margin-bottom:8px;">
-    <button class="pill active" data-filter="all">All</button>
-    <button class="pill" data-filter="BUY">Buy</button>
-    <button class="pill" data-filter="SELL">Sell</button>
-    <button class="pill" data-filter="HOLD">Hold</button>
+  <!-- FILTERS -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+    <div class="filter-pills">
+      <button class="pill active" data-filter="all">All</button>
+      <button class="pill" data-filter="BUY">🟢 Buy</button>
+      <button class="pill" data-filter="SELL">🔴 Sell</button>
+      <button class="pill" data-filter="HOLD">🟡 Hold</button>
+    </div>
   </div>
 
+  <!-- SIGNALS GRID -->
   <div class="signals-grid" id="signals-grid">
-    <div class="signal-card skeleton-box"></div>
-    <div class="signal-card skeleton-box"></div>
-    <div class="signal-card skeleton-box"></div>
+    <div class="signal-card skeleton-box" style="min-height:180px;"></div>
+    <div class="signal-card skeleton-box" style="min-height:180px;"></div>
+    <div class="signal-card skeleton-box" style="min-height:180px;"></div>
+  </div>
+
+  <div id="no-signals" style="display:none;text-align:center;padding:60px 20px;">
+    <div style="font-size:48px;margin-bottom:16px;">📊</div>
+    <p style="color:var(--text-muted);">No signals found. Check back soon!</p>
   </div>
 
   <div id="ad-sidebar" style="margin:24px 0;"></div>
+
+  <!-- DISCLAIMER -->
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin:24px 0;">
+    <p style="font-size:12px;color:var(--text-muted);line-height:1.7;">
+      ⚠️ <strong style="color:var(--text-secondary)">Disclaimer:</strong>
+      All signals are generated using AI and algorithmic analysis of market structure.
+      They are for informational purposes only and do not constitute financial advice.
+      Cryptocurrency trading involves significant risk. Always do your own research (DYOR)
+      and never invest more than you can afford to lose.
+    </p>
+  </div>
+
 </main>
 
 <footer class="footer">
   <div class="container footer-inner">
     <div class="footer-brand"><span class="logo-icon">₿</span><span>CryptoSignals LK</span></div>
-    <p class="footer-disclaimer">Not financial advice. Cryptocurrency investments involve significant risk.</p>
+    <p class="footer-disclaimer">Not financial advice. Crypto investments involve risk.</p>
+    <div class="footer-links">
+      <a href="/">News</a>
+      <a href="/signals.html">Signals</a>
+    </div>
   </div>
 </footer>
 
@@ -67,15 +104,23 @@
 <script src="/js/supabase.js"></script>
 <script src="/js/ads.js"></script>
 <script>
+let allSignals = [];
+
 document.addEventListener('DOMContentLoaded', async () => {
   ADS.init();
+
+  const settings = await DB.getSettings();
+  const tgUrl = settings.telegram_url || CONFIG.TELEGRAM_URL || '#';
+  document.getElementById('telegram-link').href = tgUrl;
+  document.getElementById('telegram-link-m').href = tgUrl;
+
   await loadSignals();
 
   document.querySelectorAll('.pill').forEach(pill => {
     pill.addEventListener('click', () => {
       document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
-      loadSignals(pill.dataset.filter);
+      renderSignals(pill.dataset.filter);
     });
   });
 
@@ -84,50 +129,101 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-async function loadSignals(filter = 'all') {
-  const signals = await DB.getSignals(50);
-  const filtered = filter === 'all' ? signals : signals.filter(s => s.signal_type === filter);
+async function loadSignals() {
+  allSignals = await DB.getSignals(50);
+  renderStatsBar();
+  renderSignals('all');
+}
+
+function renderStatsBar() {
+  const total = allSignals.length;
+  const buys = allSignals.filter(s => s.signal_type === 'BUY').length;
+  const sells = allSignals.filter(s => s.signal_type === 'SELL').length;
+  const avgConf = total ? Math.round(allSignals.reduce((s,x) => s + (x.confidence||0), 0) / total) : 0;
+
+  document.getElementById('stats-bar').innerHTML = [
+    { label: 'Total Signals', value: total, color: 'var(--accent)' },
+    { label: 'Buy Signals', value: buys, color: 'var(--accent-green)' },
+    { label: 'Sell Signals', value: sells, color: 'var(--accent-red)' },
+    { label: 'Avg Confidence', value: avgConf + '%', color: 'var(--accent-yellow)' },
+  ].map(s => `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;">
+      <div style="font-size:22px;font-weight:800;color:${s.color}">${s.value}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${s.label}</div>
+    </div>`).join('');
+}
+
+function renderSignals(filter) {
+  const filtered = filter === 'all' ? allSignals : allSignals.filter(s => s.signal_type === filter);
   const grid = document.getElementById('signals-grid');
+  const noSignals = document.getElementById('no-signals');
 
   if (!filtered.length) {
-    grid.innerHTML = '<p style="padding:40px;text-align:center;color:var(--text-muted);grid-column:1/-1;">No signals found</p>';
+    grid.innerHTML = '';
+    noSignals.style.display = 'block';
     return;
   }
+  noSignals.style.display = 'none';
 
   grid.innerHTML = filtered.map(s => {
     const badgeClass = s.signal_type === 'BUY' ? 'badge-buy' : s.signal_type === 'SELL' ? 'badge-sell' : 'badge-hold';
-    const time = new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const time = new Date(s.created_at).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const rr = s.entry_price && s.target_price && s.stop_loss
+      ? (Math.abs(s.target_price - s.entry_price) / Math.max(Math.abs(s.stop_loss - s.entry_price), 0.001)).toFixed(1)
+      : '—';
+    const phase = s.structure_phase ? s.structure_phase.replace(/_/g,' ') : '';
+    const phaseEmoji = (s.structure_phase||'').includes('bull') ? '📈' : (s.structure_phase||'').includes('bear') ? '📉' : '↔️';
+
     return `
       <div class="signal-card">
         <div class="signal-card-header">
           <span class="signal-card-coin">${s.coin}/USDT</span>
-          <div>
+          <div style="text-align:right;">
             <span class="signal-badge ${badgeClass}">${s.signal_type}</span>
             <div class="signal-card-time">${time}</div>
           </div>
         </div>
+
         <div class="signal-prices">
           <div class="signal-price-item">
             <div class="signal-price-label">Entry</div>
-            <div class="signal-price-value entry-price">$${s.entry_price || 'TBA'}</div>
+            <div class="signal-price-value entry-price">$${formatPrice(s.entry_price)}</div>
           </div>
           <div class="signal-price-item">
             <div class="signal-price-label">Target</div>
-            <div class="signal-price-value target-price">$${s.target_price || 'TBA'}</div>
+            <div class="signal-price-value target-price">$${formatPrice(s.target_price)}</div>
           </div>
           <div class="signal-price-item">
             <div class="signal-price-label">Stop Loss</div>
-            <div class="signal-price-value stop-price">$${s.stop_loss || 'TBA'}</div>
+            <div class="signal-price-value stop-price">$${formatPrice(s.stop_loss)}</div>
           </div>
         </div>
-        ${s.content ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">${s.content}</p>` : ''}
+
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin:10px 0 6px;flex-wrap:wrap;gap:4px;">
+          <span>${phaseEmoji} ${phase}</span>
+          <span>R:R 1:${rr}</span>
+          <span>HTF: ${(s.htf_bias||'').toUpperCase()}</span>
+        </div>
+
+        ${s.content ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:8px;line-height:1.6;border-top:1px solid var(--border);padding-top:8px;">${s.content}</p>` : ''}
+
         ${s.confidence ? `
-          <div class="signal-confidence">
-            <div class="confidence-label"><span>Confidence</span><span>${s.confidence}%</span></div>
-            <div class="confidence-bar"><div class="confidence-fill" style="width:${s.confidence}%"></div></div>
+          <div class="signal-confidence" style="margin-top:10px;">
+            <div class="confidence-label"><span>AI Confidence</span><span>${s.confidence}%</span></div>
+            <div class="confidence-bar"><div class="confidence-fill" style="width:${s.confidence}%;background:${s.confidence>=70?'var(--accent-green)':s.confidence>=50?'var(--accent)':'var(--accent-red)'}"></div></div>
           </div>` : ''}
       </div>`;
   }).join('');
+}
+
+function formatPrice(price) {
+  if (!price) return 'TBA';
+  const n = parseFloat(price);
+  if (n >= 1000) return n.toLocaleString('en-US', {maximumFractionDigits: 2});
+  if (n >= 1) return n.toFixed(4);
+  return n.toFixed(6);
 }
 </script>
 </body>
