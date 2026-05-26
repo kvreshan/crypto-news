@@ -190,8 +190,21 @@ async function loadSignalsWidget() {
   container.innerHTML = signals.map(s => `
     <div class="signal-item" onclick="window.location.href='/signals.html'">
       <div>
-        <div class="signal-coin">${s.coin}/USDT</div>
-        <div class="signal-info">Entry: $${s.entry_price || 'TBA'}</div>
+        <div>
+  <div class="signal-coin">${s.coin}/USDT</div>
+
+  <div class="signal-info">
+    Entry: $${s.entry_price ? Number(s.entry_price).toFixed(2) : 'TBA'}
+  </div>
+
+  <div class="signal-info">
+    SL: $${s.stop_loss ? Number(s.stop_loss).toFixed(2) : 'TBA'}
+  </div>
+
+  <div class="signal-info">
+    TP: $${s.take_profit ? Number(s.take_profit).toFixed(2) : 'TBA'}
+  </div>
+</div>
       </div>
       <span class="signal-badge badge-${s.signal_type?.toLowerCase()}">${s.signal_type}</span>
     </div>`).join('');
