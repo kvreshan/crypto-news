@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signals | Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="admin-sidebar" id="sidebar">
+    <div class="sidebar-logo"><span class="sidebar-logo-icon">₿</span><span>CryptoSignals</span></div>
+    <nav class="sidebar-nav">
+      <a href="/admin/dashboard.html" class="nav-item"><span class="nav-item-icon">📊</span> Dashboard</a>
+      <a href="/admin/news.html" class="nav-item"><span class="nav-item-icon">📰</span> News Articles</a>
+      <a href="/admin/signals.html" class="nav-item active"><span class="nav-item-icon">📈</span> Signals</a>
+      <a href="/admin/affiliates.html" class="nav-item"><span class="nav-item-icon">🔗</span> Affiliates</a>
+      <a href="/admin/ads.html" class="nav-item"><span class="nav-item-icon">📢</span> Ad Codes</a>
+      <a href="/" target="_blank" class="nav-item"><span class="nav-item-icon">🌐</span> View Site</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-item" style="width:100%" onclick="logout()"><span class="nav-item-icon">🚪</span> Logout</button>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+        <span class="topbar-title">Trading Signals</span>
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Add Signal</button>
+    </div>
+
+    <div class="admin-content">
+      <div class="alert alert-success" id="alert-success"></div>
+      <div class="alert alert-error" id="alert-error"></div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3>All Signals</h3>
+          <div style="display:flex;gap:8px;">
+            <select id="filter-type" class="form-select" style="width:120px;" onchange="loadSignals()">
+              <option value="all">All Types</option>
+              <option value="BUY">Buy</option>
+              <option value="SELL">Sell</option>
+              <option value="HOLD">Hold</option>
+            </select>
+          </div>
+        </div>
+        <div id="signals-table"><p class="table-empty"><span class="spinner"></span></p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="signal-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Signal</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <input type="hidden" id="edit-id">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Coin <span class="form-required">*</span></label>
+        <input type="text" id="f-coin" class="form-input" placeholder="BTC">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Signal Type <span class="form-required">*</span></label>
+        <select id="f-type" class="form-select">
+          <option value="BUY">BUY</option>
+          <option value="SELL">SELL</option>
+          <option value="HOLD">HOLD</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Entry Price</label>
+        <input type="number" id="f-entry" class="form-input" placeholder="62500" step="any">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target Price</label>
+        <input type="number" id="f-target" class="form-input" placeholder="69000" step="any">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Stop Loss</label>
+        <input type="number" id="f-sl" class="form-input" placeholder="58000" step="any">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confidence %</label>
+        <input type="number" id="f-conf" class="form-input" placeholder="75" min="1" max="100">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Analysis Notes</label>
+      <textarea id="f-content" class="form-textarea" rows="3" placeholder="Signal rationale..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">HTF Bias</label>
+        <select id="f-bias" class="form-select">
+          <option value="bullish">Bullish</option>
+          <option value="bearish">Bearish</option>
+          <option value="neutral">Neutral</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Structure Phase</label>
+        <select id="f-phase" class="form-select">
+          <option value="bullish_trending">Bullish Trending</option>
+          <option value="bearish_trending">Bearish Trending</option>
+          <option value="ranging">Ranging</option>
+          <option value="unknown">Unknown</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="toggle-wrapper">
+        <label class="toggle"><input type="checkbox" id="f-active" checked><span class="toggle-slider"></span></label>
+        <span class="toggle-label">Active (visible on site)</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSignal()">Save Signal</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal" style="max-width:340px;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">🗑️</div>
+    <h3 style="margin-bottom:8px;">Delete Signal?</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">This cannot be undone.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-secondary" onclick="document.getElementById('delete-modal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/admin/js/auth.js"></script>
+<script>
+let signals = [];
+document.addEventListener('DOMContentLoaded', async () => {
+  await requireAuth();
+  loadSignals();
+});
+
+async function loadSignals() {
+  const filter = document.getElementById('filter-type').value;
+  let query = db.from('signals').select('*').order('created_at', {ascending: false}).limit(100);
+  if (filter !== 'all') query = query.eq('signal_type', filter);
+  const { data } = await query;
+  signals = data || [];
+  renderTable();
+}
+
+function renderTable() {
+  const container = document.getElementById('signals-table');
+  if (!signals.length) { container.innerHTML = '<p class="table-empty">No signals found</p>'; return; }
+  container.innerHTML = `
+    <div style="overflow-x:auto;">
+    <table>
+      <thead><tr><th>Coin</th><th>Type</th><th>Entry</th><th>Target</th><th>SL</th><th>Conf</th><th>Phase</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody>${signals.map(s => {
+        const bc = s.signal_type === 'BUY' ? 'badge-buy' : s.signal_type === 'SELL' ? 'badge-sell' : 'badge-hold';
+        const date = new Date(s.created_at).toLocaleDateString();
+        return `<tr>
+          <td><strong>${s.coin}/USDT</strong></td>
+          <td><span class="badge ${bc}">${s.signal_type}</span></td>
+          <td>$${s.entry_price||'—'}</td>
+          <td style="color:var(--accent-green)">$${s.target_price||'—'}</td>
+          <td style="color:var(--accent-red)">$${s.stop_loss||'—'}</td>
+          <td>${s.confidence||'—'}%</td>
+          <td style="font-size:11px;color:var(--text-muted)">${(s.structure_phase||'').replace(/_/g,' ')}</td>
+          <td>
+            <label class="toggle">
+              <input type="checkbox" ${s.is_active?'checked':''} onchange="toggleActive('${s.id}',this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted)">${date}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-secondary btn-sm btn-icon" onclick="editSignal('${s.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm btn-icon" onclick="openDelete('${s.id}')">🗑️</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+async function toggleActive(id, active) {
+  await db.from('signals').update({is_active: active}).eq('id', id);
+  const s = signals.find(x => x.id === id);
+  if (s) s.is_active = active;
+}
+
+function openAddModal() {
+  document.getElementById('modal-title').textContent = 'Add Signal';
+  document.getElementById('edit-id').value = '';
+  ['f-coin','f-entry','f-target','f-sl','f-conf','f-content'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-type').value = 'BUY';
+  document.getElementById('f-bias').value = 'bullish';
+  document.getElementById('f-phase').value = 'bullish_trending';
+  document.getElementById('f-active').checked = true;
+  document.getElementById('signal-modal').classList.add('open');
+}
+
+function editSignal(id) {
+  const s = signals.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('modal-title').textContent = 'Edit Signal';
+  document.getElementById('edit-id').value = id;
+  document.getElementById('f-coin').value = s.coin || '';
+  document.getElementById('f-type').value = s.signal_type || 'BUY';
+  document.getElementById('f-entry').value = s.entry_price || '';
+  document.getElementById('f-target').value = s.target_price || '';
+  document.getElementById('f-sl').value = s.stop_loss || '';
+  document.getElementById('f-conf').value = s.confidence || '';
+  document.getElementById('f-content').value = s.content || '';
+  document.getElementById('f-bias').value = s.htf_bias || 'neutral';
+  document.getElementById('f-phase').value = s.structure_phase || 'unknown';
+  document.getElementById('f-active').checked = s.is_active;
+  document.getElementById('signal-modal').classList.add('open');
+}
+
+async function saveSignal() {
+  const coin = document.getElementById('f-coin').value.trim().toUpperCase();
+  if (!coin) return showAlert('error', 'Coin is required');
+  const payload = {
+    coin, signal_type: document.getElementById('f-type').value,
+    entry_price: parseFloat(document.getElementById('f-entry').value)||null,
+    target_price: parseFloat(document.getElementById('f-target').value)||null,
+    stop_loss: parseFloat(document.getElementById('f-sl').value)||null,
+    confidence: parseInt(document.getElementById('f-conf').value)||null,
+    content: document.getElementById('f-content').value.trim(),
+    htf_bias: document.getElementById('f-bias').value,
+    structure_phase: document.getElementById('f-phase').value,
+    is_active: document.getElementById('f-active').checked,
+  };
+  const editId = document.getElementById('edit-id').value;
+  const {error} = editId
+    ? await db.from('signals').update(payload).eq('id', editId)
+    : await db.from('signals').insert({...payload, created_at: new Date().toISOString()});
+  if (error) return showAlert('error', 'Save failed: ' + error.message);
+  closeModal();
+  showAlert('success', '✅ Signal saved!');
+  loadSignals();
+}
+
+function openDelete(id) {
+  document.getElementById('delete-modal').classList.add('open');
+  document.getElementById('confirm-delete').onclick = async () => {
+    await db.from('signals').delete().eq('id', id);
+    document.getElementById('delete-modal').classList.remove('open');
+    showAlert('success', '✅ Deleted');
+    loadSignals();
+  };
+}
+
+function closeModal() { document.getElementById('signal-modal').classList.remove('open'); }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+function showAlert(type, msg) {
+  const el = document.getElementById(`alert-${type}`);
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
