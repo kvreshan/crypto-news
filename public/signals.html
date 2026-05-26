@@ -105,6 +105,8 @@
 <script src="/js/ads.js"></script>
 <script>
 let allSignals = [];
+let binancePrices = {};
+let priceRefreshInterval;
 
 document.addEventListener('DOMContentLoaded', async () => {
   ADS.init();
@@ -129,10 +131,46 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
+async function getBinancePrices(coins) {
+  if (!coins.length) return {};
+  const symbols = [...new Set(coins.map(c => c.toUpperCase() + 'USDT'))];
+  try {
+    const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=' + JSON.stringify(symbols));
+    if (!res.ok) throw new Error('Binance API error');
+    const data = await res.json();
+    const prices = {};
+    data.forEach(item => {
+      const coin = item.symbol.replace('USDT', '');
+      prices[coin] = parseFloat(item.price);
+    });
+    return prices;
+  } catch (e) {
+    console.error('Binance fetch error:', e);
+    return {};
+  }
+}
+
 async function loadSignals() {
   allSignals = await DB.getSignals(50);
+  if (allSignals.length) {
+    const coins = allSignals.map(s => s.coin);
+    binancePrices = await getBinancePrices(coins);
+    if (priceRefreshInterval) clearInterval(priceRefreshInterval);
+    priceRefreshInterval = setInterval(async () => {
+      binancePrices = await getBinancePrices(coins);
+      renderSignals(document.querySelector('.pill.active')?.dataset?.filter || 'all');
+    }, 30000);
+  }
   renderStatsBar();
   renderSignals('all');
+}
+
+function calcPnL(signal) {
+  const currentPrice = binancePrices[signal.coin];
+  if (!currentPrice || !signal.entry_price) return null;
+  if (signal.signal_type === 'BUY') return ((currentPrice - signal.entry_price) / signal.entry_price) * 100;
+  if (signal.signal_type === 'SELL') return ((signal.entry_price - currentPrice) / signal.entry_price) * 100;
+  return 0;
 }
 
 function renderStatsBar() {
@@ -206,6 +244,18 @@ function renderSignals(filter) {
           <span>R:R 1:${rr}</span>
           <span>HTF: ${(s.htf_bias||'').toUpperCase()}</span>
         </div>
+
+        ${(() => {
+          const pnl = calcPnL(s);
+          if (pnl === null) return '';
+          const pnlClass = pnl >= 0 ? 'pnl-positive' : 'pnl-negative';
+          const pnlSign = pnl >= 0 ? '+' : '';
+          const pnlColor = pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+            <span style="font-size:11px;color:var(--text-muted);">Live P&L</span>
+            <span class="${pnlClass}" style="font-size:15px;font-weight:700;color:${pnlColor};">${pnlSign}${pnl.toFixed(2)}%</span>
+          </div>`;
+        })()}
 
         ${s.content ? `<p style="font-size:12px;color:var(--text-secondary);margin-top:8px;line-height:1.6;border-top:1px solid var(--border);padding-top:8px;">${s.content}</p>` : ''}
 
