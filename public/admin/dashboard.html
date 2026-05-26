@@ -8,55 +8,38 @@
   <link rel="stylesheet" href="/admin/css/admin.css">
 </head>
 <body>
-
 <div class="admin-layout">
 
-  <!-- SIDEBAR -->
   <aside class="admin-sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <span class="sidebar-logo-icon">₿</span>
-      <span>CryptoSignals</span>
+      <span class="sidebar-logo-icon">₿</span><span>CryptoSignals</span>
     </div>
     <nav class="sidebar-nav">
-      <a href="/admin/dashboard.html" class="nav-item active">
-        <span class="nav-item-icon">📊</span> Dashboard
-      </a>
-      <a href="/admin/news.html" class="nav-item">
-        <span class="nav-item-icon">📰</span> News Articles
-      </a>
-      <a href="/admin/affiliates.html" class="nav-item">
-        <span class="nav-item-icon">🔗</span> Affiliate Links
-      </a>
-      <a href="/admin/ads.html" class="nav-item">
-        <span class="nav-item-icon">📢</span> Ad Codes
-      </a>
-      <a href="/" target="_blank" class="nav-item">
-        <span class="nav-item-icon">🌐</span> View Site
-      </a>
+      <a href="/admin/dashboard.html" class="nav-item active"><span class="nav-item-icon">📊</span> Dashboard</a>
+      <a href="/admin/news.html" class="nav-item"><span class="nav-item-icon">📰</span> News Articles</a>
+      <a href="/admin/signals.html" class="nav-item"><span class="nav-item-icon">📈</span> Signals</a>
+      <a href="/admin/affiliates.html" class="nav-item"><span class="nav-item-icon">🔗</span> Affiliates</a>
+      <a href="/admin/ads.html" class="nav-item"><span class="nav-item-icon">📢</span> Ad Codes</a>
+      <a href="/" target="_blank" class="nav-item"><span class="nav-item-icon">🌐</span> View Site</a>
     </nav>
     <div class="sidebar-footer">
-      <button class="nav-item" style="width:100%" onclick="logout()">
-        <span class="nav-item-icon">🚪</span> Logout
-      </button>
+      <button class="nav-item" style="width:100%" onclick="logout()"><span class="nav-item-icon">🚪</span> Logout</button>
     </div>
   </aside>
 
-  <!-- MAIN -->
   <div class="admin-main">
     <div class="admin-topbar">
       <div style="display:flex;align-items:center;gap:12px;">
         <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
         <span class="topbar-title">Dashboard</span>
       </div>
-      <div class="topbar-actions">
-        <span id="admin-email" style="font-size:12px;color:var(--text-muted)"></span>
-      </div>
+      <span id="admin-email" style="font-size:12px;color:var(--text-muted)"></span>
     </div>
 
     <div class="admin-content">
 
-      <!-- STATS -->
-      <div class="stats-grid" id="stats-grid">
+      <!-- STATS GRID -->
+      <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Total Articles</div>
           <div class="stat-value" id="stat-articles">—</div>
@@ -79,23 +62,28 @@
         </div>
       </div>
 
+      <!-- RECENT SIGNALS -->
+      <div class="table-card" style="margin-bottom:20px;">
+        <div class="table-header">
+          <h3>Recent Signals</h3>
+          <a href="/admin/signals.html" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div id="recent-signals"><p class="table-empty">Loading...</p></div>
+      </div>
+
       <!-- RECENT ARTICLES -->
       <div class="table-card">
         <div class="table-header">
           <h3>Recent Articles</h3>
           <a href="/admin/news.html" class="btn btn-secondary btn-sm">View All</a>
         </div>
-        <div id="recent-articles">
-          <p class="table-empty">Loading...</p>
-        </div>
+        <div id="recent-articles"><p class="table-empty">Loading...</p></div>
       </div>
 
-      <!-- ANALYTICS CHART (last 7 days views) -->
-      <div class="table-card">
-        <div class="table-header">
-          <h3>Views — Last 7 Days</h3>
-        </div>
-        <div style="padding:20px;" id="chart-container">
+      <!-- VIEWS CHART -->
+      <div class="table-card" style="margin-top:20px;">
+        <div class="table-header"><h3>Views — Last 7 Days</h3></div>
+        <div style="padding:20px;">
           <div id="views-chart" style="display:flex;align-items:flex-end;gap:8px;height:120px;"></div>
           <div id="chart-labels" style="display:flex;gap:8px;margin-top:8px;"></div>
         </div>
@@ -118,10 +106,10 @@ async function loadDashboard() {
   const { data: { user } } = await db.auth.getUser();
   document.getElementById('admin-email').textContent = user?.email || '';
 
-  // Articles count + views
+  // Articles stats
   const { data: articles } = await db.from('news').select('id, views');
   document.getElementById('stat-articles').textContent = articles?.length || 0;
-  const totalViews = (articles || []).reduce((sum, a) => sum + (a.views || 0), 0);
+  const totalViews = (articles || []).reduce((s, a) => s + (a.views || 0), 0);
   document.getElementById('stat-views').textContent = totalViews.toLocaleString();
 
   // Signals count
@@ -130,50 +118,71 @@ async function loadDashboard() {
 
   // Affiliate clicks
   const { data: affiliates } = await db.from('affiliate_links').select('clicks');
-  const totalClicks = (affiliates || []).reduce((sum, a) => sum + (a.clicks || 0), 0);
+  const totalClicks = (affiliates || []).reduce((s, a) => s + (a.clicks || 0), 0);
   document.getElementById('stat-clicks').textContent = totalClicks.toLocaleString();
 
-  // Recent articles table
-  const { data: recent } = await db.from('news')
-    .select('id, title, coin_tags, views, published_at, is_published')
-    .order('published_at', { ascending: false })
-    .limit(5);
+  // Recent signals
+  const { data: recentSignals } = await db.from('signals')
+    .select('*').order('created_at', { ascending: false }).limit(5);
 
-  const container = document.getElementById('recent-articles');
-  if (!recent?.length) {
-    container.innerHTML = '<p class="table-empty">No articles yet</p>';
-    return;
+  const sigContainer = document.getElementById('recent-signals');
+  if (!recentSignals?.length) {
+    sigContainer.innerHTML = '<p class="table-empty">No signals yet — automation will generate them</p>';
+  } else {
+    sigContainer.innerHTML = `
+      <table>
+        <thead><tr><th>Coin</th><th>Type</th><th>Entry</th><th>Target</th><th>SL</th><th>Conf</th><th>Phase</th><th>Status</th></tr></thead>
+        <tbody>${recentSignals.map(s => {
+          const bc = s.signal_type === 'BUY' ? 'badge-buy' : s.signal_type === 'SELL' ? 'badge-sell' : 'badge-hold';
+          return `<tr>
+            <td><strong>${s.coin}/USDT</strong></td>
+            <td><span class="badge ${bc}">${s.signal_type}</span></td>
+            <td>$${s.entry_price||'—'}</td>
+            <td style="color:var(--accent-green)">$${s.target_price||'—'}</td>
+            <td style="color:var(--accent-red)">$${s.stop_loss||'—'}</td>
+            <td>${s.confidence||'—'}%</td>
+            <td style="font-size:11px;color:var(--text-muted)">${(s.structure_phase||'').replace(/_/g,' ')}</td>
+            <td><span class="badge ${s.is_active?'badge-green':'badge-gray'}">${s.is_active?'Active':'Inactive'}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
   }
 
-  container.innerHTML = `
-    <table>
-      <thead><tr>
-        <th>Title</th><th>Tags</th><th>Views</th><th>Status</th><th>Date</th>
-      </tr></thead>
-      <tbody>${recent.map(a => `
-        <tr>
-          <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            <a href="/article/index.html?id=${a.id}" target="_blank" style="color:var(--accent)">${escapeHtml(a.title)}</a>
-          </td>
-          <td>${(a.coin_tags || []).map(t => `<span class="badge badge-yellow">${t}</span>`).join(' ')}</td>
-          <td>${a.views || 0}</td>
-          <td><span class="badge ${a.is_published ? 'badge-green' : 'badge-gray'}">${a.is_published ? 'Live' : 'Draft'}</span></td>
-          <td style="color:var(--text-muted)">${new Date(a.published_at).toLocaleDateString()}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>`;
+  // Recent articles
+  const { data: recent } = await db.from('news')
+    .select('id, title, coin_tags, views, published_at, is_published')
+    .order('published_at', { ascending: false }).limit(5);
 
-  // Simple bar chart
+  const artContainer = document.getElementById('recent-articles');
+  if (!recent?.length) {
+    artContainer.innerHTML = '<p class="table-empty">No articles yet</p>';
+  } else {
+    artContainer.innerHTML = `
+      <table>
+        <thead><tr><th>Title</th><th>Tags</th><th>Views</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>${recent.map(a => `
+          <tr>
+            <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              <a href="/article/index.html?id=${a.id}" target="_blank" style="color:var(--accent)">${escapeHtml(a.title)}</a>
+            </td>
+            <td>${(a.coin_tags||[]).map(t=>`<span class="badge badge-yellow">${t}</span>`).join(' ')}</td>
+            <td>${a.views||0}</td>
+            <td><span class="badge ${a.is_published?'badge-green':'badge-gray'}">${a.is_published?'Live':'Draft'}</span></td>
+            <td style="color:var(--text-muted);font-size:12px;">${new Date(a.published_at).toLocaleDateString()}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // Views chart
   const { data: analyticsData } = await db.from('analytics')
-    .select('created_at')
-    .eq('event', 'view')
+    .select('created_at').eq('event', 'view')
     .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString());
 
   const days = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
-    const key = d.toLocaleDateString('en-US', { weekday: 'short' });
-    days[key] = 0;
+    days[d.toLocaleDateString('en-US', { weekday: 'short' })] = 0;
   }
   (analyticsData || []).forEach(a => {
     const key = new Date(a.created_at).toLocaleDateString('en-US', { weekday: 'short' });
@@ -181,26 +190,17 @@ async function loadDashboard() {
   });
 
   const maxVal = Math.max(...Object.values(days), 1);
-  const chartEl = document.getElementById('views-chart');
-  const labelsEl = document.getElementById('chart-labels');
-
-  chartEl.innerHTML = Object.entries(days).map(([day, val]) => `
+  document.getElementById('views-chart').innerHTML = Object.entries(days).map(([day, val]) => `
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
       <span style="font-size:11px;color:var(--text-muted)">${val}</span>
-      <div style="width:100%;background:var(--accent);border-radius:4px 4px 0 0;height:${Math.max((val/maxVal)*100, 4)}px;opacity:0.85;"></div>
+      <div style="width:100%;background:var(--accent);border-radius:4px 4px 0 0;height:${Math.max((val/maxVal)*100,4)}px;opacity:0.85;"></div>
     </div>`).join('');
-
-  labelsEl.innerHTML = Object.keys(days).map(day => `
-    <div style="flex:1;text-align:center;font-size:11px;color:var(--text-muted)">${day}</div>`).join('');
+  document.getElementById('chart-labels').innerHTML = Object.keys(days).map(day =>
+    `<div style="flex:1;text-align:center;font-size:11px;color:var(--text-muted)">${day}</div>`).join('');
 }
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-}
-
-function escapeHtml(t) {
-  return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+function escapeHtml(t) { return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>
