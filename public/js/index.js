@@ -194,16 +194,16 @@ async function loadSignalsWidget() {
   <div class="signal-coin">${s.coin}/USDT</div>
 
   <div class="signal-info">
-    Entry: $${s.entry_price ? Number(s.entry_price).toFixed(2) : 'TBA'}
-  </div>
+  Entry: $${s.entry_price ? Number(s.entry_price).toFixed(6) : 'TBA'}
+</div>
 
-  <div class="signal-info">
-    SL: $${s.stop_loss ? Number(s.stop_loss).toFixed(2) : 'TBA'}
-  </div>
+<div class="signal-info">
+  SL: $${s.stop_loss ? Number(s.stop_loss).toFixed(6) : 'TBA'}
+</div>
 
-  <div class="signal-info">
-    TP: $${s.target_price ? Number(s.target_price).toFixed(2) : 'TBA'}
-  </div>
+<div class="signal-info">
+  TP: $${s.target_price ? Number(s.target_price).toFixed(6) : 'TBA'}
+</div>
 </div>
       </div>
       <span class="signal-badge badge-${s.signal_type?.toLowerCase()}">${s.signal_type}</span>
