@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy | CryptoSignals LK</title>
+  <meta name="description" content="Privacy Policy for CryptoSignals LK">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .legal-content { max-width: 800px; margin: 0 auto; padding: 32px 16px 48px; }
+    .legal-content h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .legal-content .updated { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+    .legal-content h2 { font-size: 18px; font-weight: 700; margin: 28px 0 12px; color: var(--accent); }
+    .legal-content p, .legal-content li { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+    .legal-content ul { padding-left: 20px; }
+    .legal-content li { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a href="/" class="logo">
+      <span class="logo-icon">₿</span>
+      <span class="logo-text">CryptoSignals<span class="logo-lk">LK</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="/">News</a>
+      <a href="/signals.html">Signals</a>
+    </div>
+    <button class="hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/">News</a>
+    <a href="/signals.html">Signals</a>
+  </div>
+</nav>
+
+<main class="legal-content">
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: May 27, 2026</p>
+
+  <h2>1. Information We Collect</h2>
+  <p>When you visit CryptoSignals LK, we may collect the following information:</p>
+  <ul>
+    <li><strong>Usage Data:</strong> Pages visited, time spent, clicks on signals and affiliate links.</li>
+    <li><strong>Device Data:</strong> Browser type, operating system, IP address (hashed for privacy).</li>
+    <li><strong>Interaction Data:</strong> Signals you mark as taken, affiliate link clicks, page views.</li>
+  </ul>
+
+  <h2>2. How We Use Your Information</h2>
+  <ul>
+    <li>Operate and improve the website</li>
+    <li>Display accurate signal popularity (taken trade counts)</li>
+    <li>Serve relevant advertisements via Adsterra</li>
+    <li>Track affiliate link referrals for commission attribution</li>
+    <li>Analyze usage patterns to improve content quality</li>
+  </ul>
+
+  <h2>3. Third-Party Services</h2>
+  <ul>
+    <li><strong>Supabase:</strong> Database hosting for news articles, signals, and analytics.</li>
+    <li><strong>Vercel:</strong> Website hosting and CDN.</li>
+    <li><strong>Adsterra:</strong> Advertisements displayed on the site.</li>
+    <li><strong>Binance:</strong> Live price data for P&L calculations.</li>
+    <li><strong>CoinGecko:</strong> Market data and trending coins.</li>
+  </ul>
+
+  <h2>4. Cookies</h2>
+  <p>We use localStorage to remember your preferences (e.g., taken trades). Third-party ad providers may use cookies. You can disable cookies in your browser settings.</p>
+
+  <h2>5. Data Retention</h2>
+  <p>Usage analytics and trade action data are automatically deleted after 30 days. We do not sell your personal information.</p>
+
+  <h2>6. Your Rights</h2>
+  <p>You may request deletion of your data by contacting us. We will respond within 30 days.</p>
+
+  <h2>7. Contact</h2>
+  <p>For privacy inquiries, visit our <a href="/contact.html" style="color:var(--accent);">Contact page</a>.</p>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand"><span class="logo-icon">₿</span><span>CryptoSignals LK</span></div>
+    <p class="footer-disclaimer">Not financial advice. Crypto investments involve risk.</p>
+    <div class="footer-links">
+      <a href="/">News</a>
+      <a href="/signals.html">Signals</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('hamburger')?.addEventListener('click', () => {
+    document.getElementById('mobile-menu').classList.toggle('open');
+  });
+</script>
+</body>
+</html>
