@@ -1,31 +1,38 @@
-name: Crypto News Automation
+name: CryptoSignals LK — Automation
+
 on:
   schedule:
     - cron: '0 2 * * *'
     - cron: '30 11 * * *'
   workflow_dispatch:
+
 jobs:
-  generate-news:
+  generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Install dependencies
-        run: |
-          pip install requests
-      - name: Run automation script
+        run: pip install requests
+
+      - name: Run automation
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          SITE_URL: ${{ secrets.SITE_URL }}
           ARTICLES_PER_RUN: '3'
+          SIGNALS_PER_RUN: '3'
         run: python automation/run.py
