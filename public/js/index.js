@@ -202,7 +202,7 @@ async function loadSignalsWidget() {
   </div>
 
   <div class="signal-info">
-    TP: $${s.take_profit ? Number(s.take_profit).toFixed(2) : 'TBA'}
+    TP: $${s.target_price ? Number(s.target_price).toFixed(2) : 'TBA'}
   </div>
 </div>
       </div>
