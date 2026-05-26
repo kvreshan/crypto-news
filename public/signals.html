@@ -219,11 +219,8 @@ function renderSignals(filter) {
 }
 
 function formatPrice(price) {
-  if (!price) return 'TBA';
-  const n = parseFloat(price);
-  if (n >= 1000) return n.toLocaleString('en-US', {maximumFractionDigits: 2});
-  if (n >= 1) return n.toFixed(4);
-  return n.toFixed(6);
+  if (price === null || price === undefined) return 'TBA';
+  return Number(price).toFixed(6);
 }
 </script>
 </body>
