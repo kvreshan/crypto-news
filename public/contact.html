@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us | CryptoSignals LK</title>
+  <meta name="description" content="Contact CryptoSignals LK">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .contact-content { max-width: 600px; margin: 0 auto; padding: 32px 16px 48px; text-align: center; }
+    .contact-content h1 { font-size: 28px; font-weight: 800; margin-bottom: 12px; }
+    .contact-content p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 32px; }
+    .contact-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; margin-bottom: 16px; }
+    .contact-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .contact-card p { font-size: 14px; color: var(--text-secondary); margin-bottom: 0; }
+    .contact-card a { color: var(--accent); font-weight: 600; }
+    .contact-card a:hover { text-decoration: underline; }
+    .contact-icon { font-size: 36px; margin-bottom: 12px; display: block; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a href="/" class="logo">
+      <span class="logo-icon">₿</span>
+      <span class="logo-text">CryptoSignals<span class="logo-lk">LK</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="/">News</a>
+      <a href="/signals.html">Signals</a>
+    </div>
+    <button class="hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="/">News</a>
+    <a href="/signals.html">Signals</a>
+  </div>
+</nav>
+
+<main class="contact-content">
+  <h1>Contact Us</h1>
+  <p>Have questions, feedback, or concerns? Reach out to us through any of the channels below.</p>
+
+  <div class="contact-card">
+    <span class="contact-icon">✉️</span>
+    <h3>Email</h3>
+    <p><a href="mailto:support@cryptosignalslk.com">support@cryptosignalslk.com</a></p>
+  </div>
+
+  <div class="contact-card">
+    <span class="contact-icon">🚀</span>
+    <h3>Telegram</h3>
+    <p>Join our community for updates and signals</p>
+    <p><a href="#" id="contact-telegram">Join Telegram</a></p>
+  </div>
+
+  <div class="contact-card">
+    <span class="contact-icon">🛠️</span>
+    <h3>Support Response Time</h3>
+    <p>We aim to respond within 24-48 hours on business days.</p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand"><span class="logo-icon">₿</span><span>CryptoSignals LK</span></div>
+    <p class="footer-disclaimer">Not financial advice. Crypto investments involve risk.</p>
+    <div class="footer-links">
+      <a href="/">News</a>
+      <a href="/signals.html">Signals</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/contact.html">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('hamburger')?.addEventListener('click', () => {
+    document.getElementById('mobile-menu').classList.toggle('open');
+  });
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    const settings = await DB.getSettings().catch(() => ({}));
+    const tgUrl = settings.telegram_url || CONFIG?.TELEGRAM_URL || '#';
+    if (document.getElementById('contact-telegram')) {
+      document.getElementById('contact-telegram').href = tgUrl;
+    }
+  });
+</script>
+</body>
+</html>
