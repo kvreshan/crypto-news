@@ -273,7 +273,8 @@ class FVGDetector:
 
 
 def analyze_market_structure(candles, coin):
-    """Full SMC analysis pipeline - adapted from your Forex system"""
+    """Full SMC analysis pipeline - FIXED VERSION"""
+
     if len(candles) < 10:
         return None
 
@@ -290,14 +291,29 @@ def analyze_market_structure(candles, coin):
     order_blocks = ob_detector.detect(candles)
     fvgs = fvg_detector.detect(candles)
 
-    last_price = candles[-1]["close"]
+    # =============================================
+    # FIX: USE REAL LIVE MARKET PRICE
+    # =============================================
+
+    price_data = get_coin_price_data(coin["id"])
+
+    try:
+        real_price = float(price_data.get("usd", candles[-1]["close"]))
+    except:
+        real_price = float(candles[-1]["close"])
+
+    last_price = real_price
+
     highs = [s["price"] for s in swings if s["type"] == "high"]
     lows = [s["price"] for s in swings if s["type"] == "low"]
 
-    recent_high = max(highs[-3:]) if highs else last_price * 1.05
-    recent_low = min(lows[-3:]) if lows else last_price * 0.95
+    recent_high = max(highs[-3:]) if highs else real_price * 1.05
+    recent_low = min(lows[-3:]) if lows else real_price * 0.95
 
-    # Determine signal
+    # =============================================
+    # DETERMINE SIGNAL
+    # =============================================
+
     signal_type = "HOLD"
     confidence = 50
     htf_bias = "neutral"
@@ -305,60 +321,118 @@ def analyze_market_structure(candles, coin):
     if sweep:
         htf_bias = sweep["bias"]
         confidence = int(sweep["confidence"] * 100)
+
         if sweep["bias"] == "bullish":
             signal_type = "BUY"
             confidence = min(90, confidence + 10)
+
         elif sweep["bias"] == "bearish":
             signal_type = "SELL"
             confidence = min(90, confidence + 10)
+
     elif phase == "bullish_trending":
         signal_type = "BUY"
         htf_bias = "bullish"
         confidence = 65
+
     elif phase == "bearish_trending":
         signal_type = "SELL"
         htf_bias = "bearish"
         confidence = 65
 
-    # Order block entry refinement
-    entry_price = last_price
+    # =============================================
+    # ENTRY PRICE LOGIC
+    # =============================================
+
+    entry_price = real_price
     entry_method = "market"
+
+    # Order Block refinement
     if order_blocks:
-        relevant_obs = [ob for ob in order_blocks
-                       if (signal_type == "BUY" and ob["type"] == "bullish") or
-                          (signal_type == "SELL" and ob["type"] == "bearish")]
+
+        relevant_obs = [
+            ob for ob in order_blocks
+            if (
+                (signal_type == "BUY" and ob["type"] == "bullish")
+                or
+                (signal_type == "SELL" and ob["type"] == "bearish")
+            )
+        ]
+
         if relevant_obs:
+
             ob = relevant_obs[-1]
-            entry_price = ob["top"] if signal_type == "BUY" else ob["bottom"]
-            entry_method = "order_block"
 
-    # FVG entry refinement
+            proposed_entry = (
+                ob["top"]
+                if signal_type == "BUY"
+                else ob["bottom"]
+            )
+
+            # Ignore broken prices
+            if proposed_entry > real_price * 0.5:
+                entry_price = proposed_entry
+                entry_method = "order_block"
+
+    # FVG refinement
     if fvgs and entry_method == "market":
-        relevant_fvgs = [f for f in fvgs
-                        if (signal_type == "BUY" and f["type"] == "bullish") or
-                           (signal_type == "SELL" and f["type"] == "bearish")]
-        if relevant_fvgs:
-            entry_price = relevant_fvgs[-1]["mid"]
-            entry_method = "fvg"
 
-    # Calculate SL/TP
-    atr = calculate_atr(candles)
+        relevant_fvgs = [
+            f for f in fvgs
+            if (
+                (signal_type == "BUY" and f["type"] == "bullish")
+                or
+                (signal_type == "SELL" and f["type"] == "bearish")
+            )
+        ]
+
+        if relevant_fvgs:
+
+            proposed_entry = relevant_fvgs[-1]["mid"]
+
+            # Ignore broken prices
+            if proposed_entry > real_price * 0.5:
+                entry_price = proposed_entry
+                entry_method = "fvg"
+
+    # =============================================
+    # ATR CALCULATION FIX
+    # =============================================
+
+    atr = max(
+        calculate_atr(candles),
+        real_price * 0.01
+    )
+
+    # =============================================
+    # SL / TP
+    # =============================================
+
     if signal_type == "BUY":
-        stop_loss = round(entry_price - atr * 2, 6)
-        target_price = round(entry_price + atr * 4, 6)
+
+        stop_loss = round(entry_price - atr * 2, 8)
+        target_price = round(entry_price + atr * 4, 8)
+
     elif signal_type == "SELL":
-        stop_loss = round(entry_price + atr * 2, 6)
-        target_price = round(entry_price - atr * 4, 6)
+
+        stop_loss = round(entry_price + atr * 2, 8)
+        target_price = round(entry_price - atr * 4, 8)
+
     else:
-        stop_loss = round(last_price - atr * 2, 6)
-        target_price = round(last_price + atr * 2, 6)
+
+        stop_loss = round(last_price - atr * 2, 8)
+        target_price = round(last_price + atr * 2, 8)
+
+    # Prevent negative prices
+    stop_loss = max(stop_loss, 0.00000001)
+    target_price = max(target_price, 0.00000001)
 
     return {
         "coin": coin["symbol"],
         "signal_type": signal_type,
-        "entry_price": round(entry_price, 6),
-        "target_price": target_price,
-        "stop_loss": stop_loss,
+        "entry_price": round(entry_price, 8),
+        "target_price": round(target_price, 8),
+        "stop_loss": round(stop_loss, 8),
         "confidence": confidence,
         "phase": phase,
         "htf_bias": htf_bias,
@@ -367,7 +441,7 @@ def analyze_market_structure(candles, coin):
         "eq_levels": eq_levels,
         "order_blocks_count": len(order_blocks),
         "fvgs_count": len(fvgs),
-        "last_price": last_price,
+        "last_price": real_price,
         "atr": atr,
     }
 
